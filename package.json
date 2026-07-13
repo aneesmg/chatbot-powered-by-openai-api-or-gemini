@@ -4,8 +4,9 @@
   "private": true,
   "scripts": {
     "dev": "npx tsx server.ts",
+    "dev:next": "next dev -p 3001",
     "build": "next build",
-    "start": "npx tsx server.ts",
+    "start": "next start",
     "lint": "next lint"
   },
   "dependencies": {

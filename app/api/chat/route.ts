@@ -5,7 +5,6 @@ import { addMessage } from "@/lib/db/messages";
 import { getConversationById } from "@/lib/db/conversations";
 import type { IConversation } from "@/models/Conversation";
 import { connectToDatabase } from "@/lib/mongodb";
-import { getIO } from "@/lib/socket-server";
 import { maybeSummarize } from "@/lib/memory/summarize";
 import Message from "@/models/Message";
 
@@ -27,7 +26,6 @@ export async function POST(req: NextRequest) {
   let body: {
     conversationId?: string;
     message?: string;
-    socketId?: string;
     files?: FileAttachment[];
   };
 
@@ -37,7 +35,7 @@ export async function POST(req: NextRequest) {
     return Response.json({ error: "Invalid JSON body" }, { status: 400 });
   }
 
-  const { conversationId, message, socketId, files } = body;
+  const { conversationId, message, files } = body;
 
   if (!conversationId || !message) {
     return Response.json(
@@ -99,18 +97,7 @@ export async function POST(req: NextRequest) {
       });
     }
 
-    const savedUserMsg = await addMessage(conversationId, "user", userContent);
-
-    const io = getIO();
-    if (io) {
-      const room = `conversation:${conversationId}`;
-      if (socketId) {
-        io.to(room).except(socketId).emit("message:new", savedUserMsg);
-      } else {
-        io.to(room).emit("message:new", savedUserMsg);
-      }
-      io.to(`conversation:${conversationId}`).emit("typing:start");
-    }
+    await addMessage(conversationId, "user", userContent);
 
     const messagesForGroq = [...history, { role: "user" as const, content: userContent }];
 
@@ -149,10 +136,6 @@ export async function POST(req: NextRequest) {
           }
           controller.close();
 
-          if (io) {
-            io.to(`conversation:${conversationId}`).emit("typing:end");
-          }
-
           try {
             await addMessage(conversationId, "assistant", fullResponse || "Error: Failed to generate response.");
           } catch {
@@ -169,16 +152,6 @@ export async function POST(req: NextRequest) {
           maybeSummarize(conversationId).catch((err) =>
             console.error("Summarization trigger failed:", err)
           );
-
-          if (io) {
-            const room = `conversation:${conversationId}`;
-            io.to(room).emit("typing:end");
-            if (socketId) {
-              io.to(room).except(socketId).emit("message:new", savedAssistantMsg);
-            } else {
-              io.to(room).emit("message:new", savedAssistantMsg);
-            }
-          }
         } catch {
           console.error("Failed to save assistant message");
         }

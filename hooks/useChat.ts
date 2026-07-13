@@ -2,7 +2,6 @@
 
 import { useState, useRef, useCallback, useEffect } from "react";
 import { useAuth } from "@clerk/nextjs";
-import { connectSocket, disconnectSocket, getSocket } from "@/lib/socket-client";
 
 export interface Message {
   _id?: string;
@@ -37,53 +36,10 @@ export function useChat(conversationId: string): UseChatReturn {
   const abortRef = useRef<AbortController | null>(null);
   const userTextRef = useRef<string>("");
   const messagesRef = useRef<Message[]>([]);
+  const lastFetchRef = useRef<string>("");
   const { getToken } = useAuth();
 
   messagesRef.current = messages;
-
-  useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      const token = await getToken();
-      if (cancelled || !token) return;
-
-      const socket = connectSocket(token);
-
-      function onConnect() {
-        socket.emit("join:conversation", conversationId);
-      }
-
-      function onMessageNew(msg: Message) {
-        setMessages((prev) => {
-          if (prev.some((m) => m._id === msg._id)) return prev;
-          return [...prev, { ...msg, status: "done" }];
-        });
-      }
-
-      socket.on("connect", onConnect);
-      socket.on("message:new", onMessageNew);
-      socket.on("typing:start", () => setIsAITyping(true));
-      socket.on("typing:end", () => setIsAITyping(false));
-
-      if (socket.connected) {
-        onConnect();
-      }
-    })();
-
-    return () => {
-      cancelled = true;
-      const socket = getSocket();
-      if (socket) {
-        socket.emit("leave:conversation", conversationId);
-        socket.off("connect");
-        socket.off("message:new");
-        socket.off("typing:start");
-        socket.off("typing:end");
-        disconnectSocket();
-      }
-      setIsAITyping(false);
-    };
-  }, [conversationId, getToken]);
 
   useEffect(() => {
     let cancelled = false;
@@ -93,9 +49,11 @@ export function useChat(conversationId: string): UseChatReturn {
         if (res.ok) {
           const data = await res.json();
           if (!cancelled) {
-            setMessages(
-              data.map((m: Message) => ({ ...m, status: "done" }))
-            );
+            const loaded = data.map((m: Message) => ({ ...m, status: "done" }));
+            setMessages(loaded);
+            if (loaded.length > 0) {
+              lastFetchRef.current = loaded[loaded.length - 1]._id || "";
+            }
           }
         }
       } catch {
@@ -107,6 +65,39 @@ export function useChat(conversationId: string): UseChatReturn {
       cancelled = true;
       abortRef.current?.abort();
     };
+  }, [conversationId]);
+
+  useEffect(() => {
+    const interval = setInterval(async () => {
+      if (abortRef.current) return;
+
+      try {
+        const res = await fetch(`/api/messages?conversationId=${conversationId}`);
+        if (!res.ok) return;
+        const data = await res.json();
+        const latestId = data.length > 0 ? data[data.length - 1]._id : "";
+        if (latestId && latestId !== lastFetchRef.current) {
+          lastFetchRef.current = latestId;
+          setMessages((prev) => {
+            const existingIds = new Set(prev.map((m) => m._id));
+            const newMsgs = data
+              .filter((m: Message) => !existingIds.has(m._id))
+              .map((m: Message) => ({ ...m, status: "done" }));
+            if (newMsgs.length === 0) return prev;
+            const merged = [...prev];
+            for (const msg of newMsgs) {
+              const idx = merged.findIndex((m) => m._id === msg._id);
+              if (idx === -1) merged.push(msg);
+            }
+            return merged;
+          });
+        }
+      } catch {
+        // ignore
+      }
+    }, 3000);
+
+    return () => clearInterval(interval);
   }, [conversationId]);
 
   const sendMessage = useCallback(
@@ -136,22 +127,10 @@ export function useChat(conversationId: string): UseChatReturn {
 
       (async () => {
         try {
-          const body: Record<string, any> = {
-            conversationId,
-            message: text,
-          };
-          if (files && files.length > 0) {
-            body.files = files;
-          }
-          const socket = getSocket();
-          if (socket?.connected) {
-            body.socketId = socket.id;
-          }
-
           const res = await fetch("/api/chat", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(body),
+            body: JSON.stringify({ conversationId, message: text }),
             signal: controller.signal,
           });
 
