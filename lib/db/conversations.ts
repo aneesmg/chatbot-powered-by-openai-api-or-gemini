@@ -9,14 +9,14 @@ export async function createConversation(userId: string, title: string): Promise
 
 export async function getConversationsByUser(userId: string): Promise<IConversation[]> {
   await connectToDatabase();
-  const conversations = await Conversation.find({ userId }).sort({ updatedAt: -1 }).lean();
-  return conversations as IConversation[];
+  const conversations = await Conversation.find({ userId }).sort({ updatedAt: -1 });
+  return conversations as unknown as IConversation[];
 }
 
 export async function getConversationById(id: string): Promise<IConversation | null> {
   await connectToDatabase();
-  const conversation = await Conversation.findById(id).lean();
-  return conversation as IConversation | null;
+  const conversation = await Conversation.findById(id);
+  return conversation as unknown as IConversation | null;
 }
 
 export async function deleteConversation(id: string): Promise<void> {

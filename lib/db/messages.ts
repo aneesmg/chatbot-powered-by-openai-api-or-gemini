@@ -13,8 +13,8 @@ export async function addMessage(
 
 export async function getMessagesByConversation(conversationId: string): Promise<IMessage[]> {
   await connectToDatabase();
-  const messages = await Message.find({ conversationId }).sort({ createdAt: 1 }).lean();
-  return messages as IMessage[];
+  const messages = await Message.find({ conversationId }).sort({ createdAt: 1 });
+  return messages as unknown as IMessage[];
 }
 
 export async function getRecentMessagesForContext(
@@ -24,9 +24,8 @@ export async function getRecentMessagesForContext(
   await connectToDatabase();
   const messages = await Message.find({ conversationId })
     .sort({ createdAt: -1 })
-    .limit(limit)
-    .lean();
-  return (messages as IMessage[]).reverse();
+    .limit(limit);
+  return messages.reverse() as unknown as IMessage[];
 }
 
 export async function deleteMessagesByConversation(conversationId: string): Promise<void> {
