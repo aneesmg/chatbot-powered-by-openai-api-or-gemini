@@ -2,8 +2,7 @@
   "framework": "nextjs",
   "buildCommand": "next build",
   "outputDirectory": ".next",
-  "installCommand": "npm install --loglevel verbose",
-  "nodeVersion": "20.x",
+  "installCommand": "npm install --legacy-peer-deps",
   "github": {
     "silent": true
   }
