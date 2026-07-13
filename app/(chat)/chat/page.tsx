@@ -18,6 +18,7 @@ export default function ChatIndexPage() {
         body: JSON.stringify({ title: text.slice(0, 60) }),
       });
       const conv = await res.json();
+      if (!conv?._id) return;
       router.push(`/chat/${conv._id}`);
     } catch {
       // fallback

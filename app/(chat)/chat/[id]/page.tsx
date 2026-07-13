@@ -17,6 +17,13 @@ export default function ChatConversationPage({
   const { id } = params;
   const router = useRouter();
   const bottomRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!id || id === "undefined" || id.length < 10) {
+      router.replace("/chat");
+    }
+  }, [id, router]);
+
   const { messages, loaded, isStreaming, isAITyping, sendMessage, cancel, retry } = useChat(id);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [deleting, setDeleting] = useState(false);

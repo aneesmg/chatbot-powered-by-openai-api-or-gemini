@@ -1,6 +1,7 @@
 import { NextRequest } from "next/server";
 import { auth } from "@clerk/nextjs/server";
 import Groq from "groq-sdk";
+import mongoose from "mongoose";
 import { addMessage } from "@/lib/db/messages";
 import { getConversationById } from "@/lib/db/conversations";
 import type { IConversation } from "@/models/Conversation";
@@ -40,6 +41,13 @@ export async function POST(req: NextRequest) {
   if (!conversationId || !message) {
     return Response.json(
       { error: "conversationId and message are required" },
+      { status: 400 }
+    );
+  }
+
+  if (!mongoose.Types.ObjectId.isValid(conversationId)) {
+    return Response.json(
+      { error: "Invalid conversationId" },
       { status: 400 }
     );
   }

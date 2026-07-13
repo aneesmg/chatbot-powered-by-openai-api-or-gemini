@@ -53,6 +53,7 @@ export default function Sidebar({
         body: JSON.stringify({ title: "New Chat" }),
       });
       const conv = await res.json();
+      if (!conv?._id) return;
       loadConversations();
       router.push(`/chat/${conv._id}`);
       onClose();
