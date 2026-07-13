@@ -147,7 +147,7 @@ export async function POST(req: NextRequest) {
         controller.close();
 
         try {
-          const savedAssistantMsg = await addMessage(conversationId, "assistant", fullResponse);
+          await addMessage(conversationId, "assistant", fullResponse);
 
           maybeSummarize(conversationId).catch((err) =>
             console.error("Summarization trigger failed:", err)
