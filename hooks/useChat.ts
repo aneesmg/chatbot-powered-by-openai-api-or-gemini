@@ -49,7 +49,9 @@ export function useChat(conversationId: string): UseChatReturn {
         if (res.ok) {
           const data = await res.json();
           if (!cancelled) {
-            const loaded = data.map((m: Message) => ({ ...m, status: "done" }));
+            const loaded: Message[] = Array.isArray(data)
+              ? data.map((m) => ({ ...m, status: "done" as const }))
+              : [];
             setMessages(loaded);
             if (loaded.length > 0) {
               lastFetchRef.current = loaded[loaded.length - 1]._id || "";
@@ -75,14 +77,15 @@ export function useChat(conversationId: string): UseChatReturn {
         const res = await fetch(`/api/messages?conversationId=${conversationId}`);
         if (!res.ok) return;
         const data = await res.json();
+        if (!Array.isArray(data)) return;
         const latestId = data.length > 0 ? data[data.length - 1]._id : "";
         if (latestId && latestId !== lastFetchRef.current) {
           lastFetchRef.current = latestId;
           setMessages((prev) => {
             const existingIds = new Set(prev.map((m) => m._id));
             const newMsgs = data
-              .filter((m: Message) => !existingIds.has(m._id))
-              .map((m: Message) => ({ ...m, status: "done" }));
+              .filter((m) => !existingIds.has(m._id))
+              .map((m) => ({ ...m, status: "done" as const }));
             if (newMsgs.length === 0) return prev;
             const merged = [...prev];
             for (const msg of newMsgs) {

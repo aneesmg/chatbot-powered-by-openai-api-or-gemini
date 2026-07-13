@@ -30,8 +30,10 @@ export default function Sidebar({
     setLoading(true);
     fetch("/api/conversations")
       .then((res) => res.json())
-      .then(setConversations)
-      .catch(() => {})
+      .then((data) => {
+        setConversations(Array.isArray(data) ? data : []);
+      })
+      .catch(() => setConversations([]))
       .finally(() => setLoading(false));
   }
 
