@@ -18,6 +18,7 @@ interface FileAttachment {
 
 interface UseChatReturn {
   messages: Message[];
+  loaded: boolean;
   isStreaming: boolean;
   isAITyping: boolean;
   sendMessage: (text: string, files?: FileAttachment[]) => void;
@@ -32,6 +33,7 @@ function tempId() {
 
 export function useChat(conversationId: string): UseChatReturn {
   const [messages, setMessages] = useState<Message[]>([]);
+  const [loaded, setLoaded] = useState(false);
   const [isAITyping, setIsAITyping] = useState(false);
   const abortRef = useRef<AbortController | null>(null);
   const userTextRef = useRef<string>("");
@@ -60,6 +62,8 @@ export function useChat(conversationId: string): UseChatReturn {
         }
       } catch {
         // ignore
+      } finally {
+        if (!cancelled) setLoaded(true);
       }
     }
     load();
@@ -245,5 +249,5 @@ export function useChat(conversationId: string): UseChatReturn {
 
   const isStreaming = messages.some((m) => m.status === "streaming");
 
-  return { messages, isStreaming, isAITyping, sendMessage, cancel, retry };
+  return { messages, loaded, isStreaming, isAITyping, sendMessage, cancel, retry };
 }

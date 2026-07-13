@@ -17,16 +17,9 @@ export default function ChatConversationPage({
   const { id } = params;
   const router = useRouter();
   const bottomRef = useRef<HTMLDivElement>(null);
-  const { messages, isStreaming, isAITyping, sendMessage, cancel, retry } = useChat(id);
+  const { messages, loaded, isStreaming, isAITyping, sendMessage, cancel, retry } = useChat(id);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [deleting, setDeleting] = useState(false);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    if (messages.length > 0) {
-      setLoading(false);
-    }
-  }, [messages]);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: isStreaming ? "auto" : "smooth" });
@@ -75,7 +68,7 @@ export default function ChatConversationPage({
         </div>
 
         <div className="flex-1 overflow-y-auto px-4 py-6">
-          {loading ? (
+          {!loaded ? (
             <SkeletonLoader />
           ) : messages.length === 0 ? (
             <div className="flex h-full items-center justify-center">
