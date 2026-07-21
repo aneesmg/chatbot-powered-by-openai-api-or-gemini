@@ -148,7 +148,6 @@ export default function ChatInput({ onSend, onCancel, isStreaming }: ChatInputPr
     <>
       <PermissionModal open={showPermissionModal} onClose={() => setShowPermissionModal(false)} />
 
-      {/* Camera overlay */}
       {showCamera && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm">
           <div className="relative mx-4 w-full max-w-lg overflow-hidden rounded-2xl bg-black">
@@ -172,28 +171,27 @@ export default function ChatInput({ onSend, onCancel, isStreaming }: ChatInputPr
         </div>
       )}
 
-      <div className="glass mx-auto mb-4 flex w-full max-w-3xl flex-col rounded-2xl px-4 py-3">
-        {/* File attachments preview */}
+      <div className="mx-auto mb-4 flex w-full max-w-3xl flex-col rounded-2xl border border-border bg-surface px-4 py-3">
         {attachments.length > 0 && (
           <div className="mb-2 flex flex-wrap gap-2">
             {attachments.map((att, i) => (
               <div
                 key={i}
-                className="flex items-center gap-1.5 rounded-lg bg-white/5 px-2.5 py-1.5 text-xs text-gray-300"
+                className="flex items-center gap-1.5 rounded-lg bg-white/5 px-2.5 py-1.5 text-xs text-text-secondary"
               >
                 {fileIcon(att.type)}
                 <span className="max-w-[120px] truncate">{att.filename}</span>
                 <button
                   onClick={() => removeAttachment(i)}
-                  className="ml-0.5 text-gray-500 hover:text-white"
+                  className="ml-0.5 text-text-muted hover:text-text-primary"
                 >
                   <X size={12} />
                 </button>
               </div>
             ))}
             {uploading && (
-              <span className="flex items-center gap-1 text-xs text-gray-500">
-                <span className="h-2 w-2 animate-pulse rounded-full bg-accent-cyan" />
+              <span className="flex items-center gap-1 text-xs text-text-muted">
+                <span className="h-2 w-2 animate-pulse rounded-full bg-accent-primary" />
                 Uploading...
               </span>
             )}
@@ -201,13 +199,12 @@ export default function ChatInput({ onSend, onCancel, isStreaming }: ChatInputPr
         )}
 
         <div className="flex items-end gap-2">
-          {/* File attachment buttons */}
           <div className="flex shrink-0 items-center gap-1">
             <button
               onClick={openCamera}
               disabled={isStreaming}
               title="Take a photo"
-              className="flex h-8 w-8 items-center justify-center rounded-lg text-gray-500 transition-colors hover:bg-white/5 hover:text-white disabled:opacity-30"
+              className="flex h-8 w-8 items-center justify-center rounded-lg text-text-muted transition-colors hover:bg-white/5 hover:text-text-primary disabled:opacity-30"
             >
               <Camera size={15} />
             </button>
@@ -215,7 +212,7 @@ export default function ChatInput({ onSend, onCancel, isStreaming }: ChatInputPr
               onClick={() => imageInputRef.current?.click()}
               disabled={isStreaming}
               title="Upload images"
-              className="flex h-8 w-8 items-center justify-center rounded-lg text-gray-500 transition-colors hover:bg-white/5 hover:text-white disabled:opacity-30"
+              className="flex h-8 w-8 items-center justify-center rounded-lg text-text-muted transition-colors hover:bg-white/5 hover:text-text-primary disabled:opacity-30"
             >
               <ImageIcon size={15} />
             </button>
@@ -223,7 +220,7 @@ export default function ChatInput({ onSend, onCancel, isStreaming }: ChatInputPr
               onClick={() => fileInputRef.current?.click()}
               disabled={isStreaming}
               title="Upload files"
-              className="flex h-8 w-8 items-center justify-center rounded-lg text-gray-500 transition-colors hover:bg-white/5 hover:text-white disabled:opacity-30"
+              className="flex h-8 w-8 items-center justify-center rounded-lg text-text-muted transition-colors hover:bg-white/5 hover:text-text-primary disabled:opacity-30"
             >
               <Paperclip size={15} />
             </button>
@@ -260,7 +257,7 @@ export default function ChatInput({ onSend, onCancel, isStreaming }: ChatInputPr
             }
             rows={1}
             disabled={isStreaming}
-            className="max-h-[200px] min-h-[24px] flex-1 resize-none bg-transparent text-sm text-white outline-none placeholder:text-gray-500 disabled:opacity-40 focus:ring-0"
+            className="max-h-[200px] min-h-[24px] flex-1 resize-none bg-transparent text-sm text-text-primary outline-none placeholder:text-text-muted disabled:opacity-40 focus:ring-0"
           />
 
           <div className="flex items-center gap-1.5">
@@ -271,7 +268,7 @@ export default function ChatInput({ onSend, onCancel, isStreaming }: ChatInputPr
                   ? "bg-red-500/20 text-red-400"
                   : error
                     ? "bg-red-500/10 text-red-400/50"
-                    : "text-gray-500 hover:bg-white/5 hover:text-white"
+                    : "text-text-muted hover:bg-white/5 hover:text-text-primary"
               }`}
             >
               {isListening ? (
@@ -295,7 +292,7 @@ export default function ChatInput({ onSend, onCancel, isStreaming }: ChatInputPr
               <button
                 onClick={handleSend}
                 disabled={!value.trim() && attachments.length === 0}
-                className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-accent-cyan to-cyan-400 text-black transition-all hover:shadow-[0_0_12px_rgba(0,229,255,0.4)] disabled:opacity-30 disabled:hover:shadow-none"
+                className="flex h-8 w-8 items-center justify-center rounded-lg bg-accent-primary text-white transition-all hover:bg-accent-hover disabled:opacity-30"
               >
                 <Send size={14} />
               </button>

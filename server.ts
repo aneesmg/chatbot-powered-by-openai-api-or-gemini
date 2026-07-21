@@ -37,6 +37,11 @@ app.prepare().then(() => {
   });
 
   io.on("connection", (socket) => {
+    const userId = (socket as any).userId;
+    if (userId) {
+      socket.join(`user:${userId}`);
+    }
+
     socket.on("join:conversation", (conversationId: string) => {
       socket.join(`conversation:${conversationId}`);
     });

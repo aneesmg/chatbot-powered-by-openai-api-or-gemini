@@ -2,6 +2,7 @@
 
 import { useState, useRef, useCallback, useEffect } from "react";
 import { useAuth } from "@clerk/nextjs";
+import { connectSocket, disconnectSocket, joinConversation, leaveConversation, getSocket } from "@/lib/socket-client";
 
 export interface Message {
   _id?: string;
@@ -38,7 +39,6 @@ export function useChat(conversationId: string): UseChatReturn {
   const abortRef = useRef<AbortController | null>(null);
   const userTextRef = useRef<string>("");
   const messagesRef = useRef<Message[]>([]);
-  const lastFetchRef = useRef<string>("");
   const { getToken } = useAuth();
 
   messagesRef.current = messages;
@@ -55,13 +55,9 @@ export function useChat(conversationId: string): UseChatReturn {
               ? data.map((m) => ({ ...m, status: "done" as const }))
               : [];
             setMessages(loaded);
-            if (loaded.length > 0) {
-              lastFetchRef.current = loaded[loaded.length - 1]._id || "";
-            }
           }
         }
       } catch {
-        // ignore
       } finally {
         if (!cancelled) setLoaded(true);
       }
@@ -74,38 +70,53 @@ export function useChat(conversationId: string): UseChatReturn {
   }, [conversationId]);
 
   useEffect(() => {
-    const interval = setInterval(async () => {
-      if (abortRef.current) return;
+    let cancelled = false;
 
+    async function initSocket() {
       try {
-        const res = await fetch(`/api/messages?conversationId=${conversationId}`);
-        if (!res.ok) return;
-        const data = await res.json();
-        if (!Array.isArray(data)) return;
-        const latestId = data.length > 0 ? data[data.length - 1]._id : "";
-        if (latestId && latestId !== lastFetchRef.current) {
-          lastFetchRef.current = latestId;
-          setMessages((prev) => {
-            const existingIds = new Set(prev.map((m) => m._id));
-            const newMsgs = data
-              .filter((m) => !existingIds.has(m._id))
-              .map((m) => ({ ...m, status: "done" as const }));
-            if (newMsgs.length === 0) return prev;
-            const merged = [...prev];
-            for (const msg of newMsgs) {
-              const idx = merged.findIndex((m) => m._id === msg._id);
-              if (idx === -1) merged.push(msg);
-            }
-            return merged;
-          });
-        }
-      } catch {
-        // ignore
-      }
-    }, 3000);
+        const socket = await connectSocket(getToken);
 
-    return () => clearInterval(interval);
-  }, [conversationId]);
+        if (cancelled) return;
+
+        joinConversation(conversationId);
+
+        socket.on("message:new", (message: Message) => {
+          if (cancelled) return;
+          setMessages((prev) => {
+            const exact = prev.find((m) => m._id === message._id);
+            if (exact) return prev;
+
+            const pending = prev.find(
+              (m) => m.role === message.role && m._id?.startsWith("temp-")
+            );
+            if (pending) {
+              return prev.map((m) =>
+                m._id === pending._id
+                  ? { ...m, _id: message._id }
+                  : m
+              );
+            }
+
+            return [...prev, { ...message, status: "done" }];
+          });
+        });
+      } catch {
+      }
+    }
+
+    initSocket();
+
+    return () => {
+      cancelled = true;
+      leaveConversation(conversationId);
+    };
+  }, [conversationId, getToken]);
+
+  useEffect(() => {
+    return () => {
+      disconnectSocket();
+    };
+  }, []);
 
   const sendMessage = useCallback(
     (text: string, files?: FileAttachment[]) => {
@@ -128,6 +139,7 @@ export function useChat(conversationId: string): UseChatReturn {
       };
 
       setMessages((prev) => [...prev, userMsg, placeholder]);
+      setIsAITyping(true);
 
       const controller = new AbortController();
       abortRef.current = controller;
@@ -210,6 +222,7 @@ export function useChat(conversationId: string): UseChatReturn {
             )
           );
         } finally {
+          setIsAITyping(false);
           if (abortRef.current === controller) {
             abortRef.current = null;
           }
@@ -221,6 +234,7 @@ export function useChat(conversationId: string): UseChatReturn {
 
   const cancel = useCallback(() => {
     abortRef.current?.abort();
+    setIsAITyping(false);
   }, []);
 
   const retry = useCallback(() => {

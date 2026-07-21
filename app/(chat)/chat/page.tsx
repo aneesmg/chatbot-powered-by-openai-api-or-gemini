@@ -21,7 +21,6 @@ export default function ChatIndexPage() {
       if (!conv?._id) return;
       router.push(`/chat/${conv._id}`);
     } catch {
-      // fallback
     }
   }
 
@@ -31,15 +30,15 @@ export default function ChatIndexPage() {
 
       <button
         onClick={() => setSidebarOpen(true)}
-        className="fixed left-3 top-20 z-30 rounded-xl glass p-2.5 text-gray-400 hover:text-white md:hidden"
+        className="fixed left-3 top-20 z-30 rounded-xl border border-border bg-surface p-2.5 text-text-muted hover:text-text-primary md:hidden"
       >
         <Menu size={20} />
       </button>
 
       <main className="flex flex-1 flex-col items-center justify-center gap-6 px-4">
         <div className="text-center">
-          <h2 className="text-lg font-semibold text-white">AI Chat Assistant</h2>
-          <p className="mt-1 text-sm text-gray-500">
+          <h2 className="text-lg font-semibold text-text-primary">AI Chat Assistant</h2>
+          <p className="mt-1 text-sm text-text-muted">
             Select a conversation or start a new chat
           </p>
         </div>

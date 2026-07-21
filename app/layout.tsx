@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import { ClerkProvider } from "@clerk/nextjs";
+import { ThemeProvider } from "@/lib/theme-context";
 import "./globals.css";
 
 const inter = Inter({
@@ -27,10 +28,11 @@ export default function RootLayout({
 }>) {
   return (
     <ClerkProvider>
-
-      <html lang="en" className="dark">
-        <body className={`${inter.variable} font-sans antialiased bg-background text-white`}>
-          {children}
+      <html lang="en" data-theme="light">
+        <body className={`${inter.variable} font-sans antialiased`}>
+          <ThemeProvider>
+            {children}
+          </ThemeProvider>
         </body>
       </html>
     </ClerkProvider>

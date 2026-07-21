@@ -38,15 +38,15 @@ export default function PromptSuggestions({
           <button
             key={s.text}
             onClick={() => onSelect(s.text)}
-            className="group glass rounded-2xl border border-transparent p-4 text-left transition-all hover:border-accent-cyan/30 hover:shadow-[0_0_20px_rgba(0,229,255,0.08)]"
+            className="group rounded-2xl border border-border bg-surface p-4 text-left transition-all hover:bg-surface-hover hover:border-accent-primary/30"
           >
-            <div className="mb-2 flex h-8 w-8 items-center justify-center rounded-lg bg-accent-cyan/10 text-accent-cyan">
+            <div className="mb-2 flex h-8 w-8 items-center justify-center rounded-lg bg-accent-primary/10 text-accent-primary">
               <Icon size={16} />
             </div>
-            <p className="text-sm font-medium text-white group-hover:text-accent-cyan">
+            <p className="text-sm font-medium text-text-primary group-hover:text-accent-primary">
               {s.title}
             </p>
-            <p className="mt-1 text-xs text-gray-500">{s.text}</p>
+            <p className="mt-1 text-xs text-text-muted">{s.text}</p>
           </button>
         );
       })}

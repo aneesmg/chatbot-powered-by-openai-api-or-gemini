@@ -11,18 +11,18 @@ export default async function Home() {
 
   return (
     <main className="flex min-h-screen flex-col items-center justify-center gap-8 bg-background">
-      <h1 className="text-4xl font-bold text-white">Chatbot</h1>
-      <p className="text-gray-400">AI Chatbot powered by OpenAI or Gemini</p>
+      <h1 className="text-4xl font-bold text-text-primary">Chatbot</h1>
+      <p className="text-text-secondary">AI Chatbot powered by OpenAI or Gemini</p>
       <div className="flex gap-4">
         <Link
           href="/sign-in"
-          className="rounded-xl bg-accent-cyan px-6 py-3 font-semibold text-black transition-shadow hover:shadow-[0_0_20px_rgba(0,229,255,0.5)]"
+          className="rounded-xl bg-accent-primary px-6 py-3 font-semibold text-white transition-colors hover:bg-accent-hover"
         >
           Sign In
         </Link>
         <Link
           href="/sign-up"
-          className="glass rounded-xl px-6 py-3 font-semibold text-white transition-colors hover:bg-white/10"
+          className="rounded-xl border border-border bg-surface px-6 py-3 font-semibold text-text-primary transition-colors hover:bg-surface-hover"
         >
           Sign Up
         </Link>

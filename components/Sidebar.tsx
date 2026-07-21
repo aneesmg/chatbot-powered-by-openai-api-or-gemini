@@ -2,7 +2,9 @@
 
 import { useEffect, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
+import { useAuth } from "@clerk/nextjs";
 import { Plus, MessageSquare, X, FileText, Trash2 } from "lucide-react";
+import { connectSocket, getSocket } from "@/lib/socket-client";
 
 interface Conversation {
   _id: string;
@@ -26,15 +28,15 @@ export default function Sidebar({
 
   const activeId = pathname.split("/chat/")[1]?.split("/")[0] || "";
 
-  function loadConversations() {
-    setLoading(true);
+  function loadConversations(background?: boolean) {
+    if (!background) setLoading(true);
     fetch("/api/conversations")
       .then((res) => res.json())
       .then((data) => {
         setConversations(Array.isArray(data) ? data : []);
       })
       .catch(() => setConversations([]))
-      .finally(() => setLoading(false));
+      .finally(() => { if (!background) setLoading(false); });
   }
 
   useEffect(() => {
@@ -42,8 +44,26 @@ export default function Sidebar({
   }, []);
 
   useEffect(() => {
-    loadConversations();
+    loadConversations(true);
   }, [pathname]);
+
+  const { getToken } = useAuth();
+
+  useEffect(() => {
+    let cancelled = false;
+    connectSocket(getToken).then(() => {
+      if (cancelled) return;
+      const socket = getSocket();
+      if (!socket) return;
+      const handler = () => {
+        if (!cancelled) loadConversations(true);
+      };
+      socket.on("conversation:updated", handler);
+    });
+    return () => { cancelled = true; };
+  }, [getToken]);
+
+
 
   async function handleNewChat() {
     try {
@@ -58,7 +78,6 @@ export default function Sidebar({
       router.push(`/chat/${conv._id}`);
       onClose();
     } catch {
-      // fallback
     }
   }
 
@@ -72,7 +91,6 @@ export default function Sidebar({
       router.push("/chat");
       onClose();
     } catch {
-      // fallback
     }
     setClearing(false);
   }
@@ -82,11 +100,11 @@ export default function Sidebar({
 
   const sidebar = (
     <aside className="flex h-full flex-col">
-      <div className="flex items-center justify-between border-b border-white/10 px-4 py-3 md:hidden">
-        <span className="text-sm font-semibold text-white">Chats</span>
+      <div className="flex items-center justify-between border-b border-border px-4 py-3 md:hidden">
+        <span className="text-sm font-semibold text-text-primary">Chats</span>
         <button
           onClick={onClose}
-          className="rounded-lg p-1 text-gray-400 hover:bg-white/10 hover:text-white"
+          className="rounded-lg p-1 text-text-muted hover:bg-white/5 hover:text-text-primary"
         >
           <X size={20} />
         </button>
@@ -95,7 +113,7 @@ export default function Sidebar({
       <div className="p-3">
         <button
           onClick={handleNewChat}
-          className="glass flex w-full items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-medium text-white transition-all hover:border-accent-cyan/50 hover:shadow-[0_0_12px_rgba(0,229,255,0.15)]"
+          className="flex w-full items-center justify-center gap-2 rounded-xl border border-border bg-surface px-4 py-2.5 text-sm font-medium text-text-primary transition-all hover:bg-surface-hover"
         >
           <Plus size={18} />
           New Chat
@@ -103,9 +121,9 @@ export default function Sidebar({
       </div>
 
       {hasSummary && (
-        <div className="mx-3 mb-2 flex items-center gap-2 rounded-lg bg-accent-cyan/5 px-3 py-2">
-          <FileText size={14} className="shrink-0 text-accent-cyan" />
-          <span className="text-xs text-accent-cyan/80 leading-relaxed">
+        <div className="mx-3 mb-2 flex items-center gap-2 rounded-lg bg-accent-primary/5 px-3 py-2">
+          <FileText size={14} className="shrink-0 text-accent-primary" />
+          <span className="text-xs text-accent-primary/70 leading-relaxed">
             Long conversation — using summarized memory
           </span>
         </div>
@@ -119,7 +137,7 @@ export default function Sidebar({
             ))}
           </div>
         ) : conversations.length === 0 ? (
-          <p className="px-2 py-8 text-center text-sm text-gray-500">
+          <p className="px-2 py-8 text-center text-sm text-text-muted">
             No conversations yet
           </p>
         ) : null}
@@ -134,8 +152,8 @@ export default function Sidebar({
               }}
               className={`flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm transition-all ${
                 isActive
-                  ? "bg-accent-cyan/10 text-accent-cyan border border-accent-cyan/30"
-                  : "text-gray-400 hover:bg-white/5 hover:text-white border border-transparent"
+                  ? "bg-accent-primary/10 text-accent-primary"
+                  : "text-text-secondary hover:bg-white/5 hover:text-text-primary"
               }`}
             >
               <MessageSquare size={16} className="shrink-0" />
@@ -146,7 +164,7 @@ export default function Sidebar({
       </nav>
 
       {conversations.length > 0 && (
-        <div className="border-t border-white/10 p-3">
+        <div className="border-t border-border p-3">
           <button
             onClick={handleClearAll}
             disabled={clearing}
@@ -162,7 +180,7 @@ export default function Sidebar({
 
   return (
     <>
-      <div className="hidden md:flex md:w-64 md:flex-col md:border-r md:border-white/10">
+      <div className="hidden md:flex md:w-64 md:flex-col md:border-r md:border-border">
         {sidebar}
       </div>
 
@@ -172,7 +190,7 @@ export default function Sidebar({
             className="absolute inset-0 bg-black/60 backdrop-blur-sm"
             onClick={onClose}
           />
-          <div className="absolute left-0 top-0 h-full w-72 animate-slide-in glass border-r border-white/10">
+          <div className="absolute left-0 top-0 h-full w-72 animate-slide-in border-r border-border bg-surface">
             {sidebar}
           </div>
         </div>

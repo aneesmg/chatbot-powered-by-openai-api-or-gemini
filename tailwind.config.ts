@@ -9,10 +9,16 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
-        background: "#0A0A0F",
-        surface: "rgba(255,255,255,0.05)",
-        "accent-cyan": "#00E5FF",
-        "accent-purple": "#A855F7",
+        background: "var(--bg)",
+        surface: "var(--surface)",
+        "surface-hover": "var(--surface-hover)",
+        border: "var(--border)",
+        "accent-primary": "var(--accent)",
+        "accent-hover": "var(--accent-hover)",
+        "text-primary": "var(--text-primary)",
+        "text-secondary": "var(--text-secondary)",
+        "text-muted": "var(--text-muted)",
+        "user-bubble": "var(--user-bubble)",
       },
     },
   },

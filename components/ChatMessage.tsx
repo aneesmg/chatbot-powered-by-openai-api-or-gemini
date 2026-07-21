@@ -11,7 +11,6 @@ interface FileAttachment {
   content: string;
 }
 
-// Messages may have file context appended; display it cleanly
 function parseContent(content: string): { text: string; files: FileAttachment[] } {
   const files: FileAttachment[] = [];
   const lines = content.split("\n");
@@ -81,8 +80,8 @@ export default memo(function ChatMessage({ message, onRetry }: ChatMessageProps)
       <div
         className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full ${
           isUser
-            ? "bg-accent-purple/20 text-accent-purple"
-            : "bg-accent-cyan/20 text-accent-cyan"
+            ? "bg-accent-primary/10 text-accent-primary"
+            : "bg-surface text-text-secondary"
         }`}
       >
         {isUser ? <User size={16} /> : <Bot size={16} />}
@@ -92,14 +91,14 @@ export default memo(function ChatMessage({ message, onRetry }: ChatMessageProps)
         <div
           className={`rounded-2xl px-4 py-3 leading-relaxed ${
             isUser
-              ? "bg-accent-purple/10 rounded-tr-md"
+              ? "bg-user-bubble rounded-tr-md"
               : isError
-                ? "glass rounded-tl-md border-red-500/40"
-                : "glass rounded-tl-md border-accent-cyan/20"
+                ? "glass rounded-tl-md border border-red-500/30"
+                : "glass rounded-tl-md"
           }`}
         >
           {isUser ? (
-            <p className="text-sm text-white">{content}</p>
+            <p className="text-sm text-text-primary">{content}</p>
           ) : isError ? (
             <div className="flex flex-col gap-2">
               <p className="text-sm text-red-400">{content || "Failed to generate response"}</p>
@@ -115,9 +114,9 @@ export default memo(function ChatMessage({ message, onRetry }: ChatMessageProps)
             </div>
           ) : isStreaming && !content ? (
             <div className="flex items-center gap-1 py-1">
-              <span className="h-2 w-2 animate-bounce rounded-full bg-accent-cyan" style={{ animationDelay: "0ms" }} />
-              <span className="h-2 w-2 animate-bounce rounded-full bg-accent-cyan" style={{ animationDelay: "150ms" }} />
-              <span className="h-2 w-2 animate-bounce rounded-full bg-accent-cyan" style={{ animationDelay: "300ms" }} />
+              <span className="h-2 w-2 animate-pulse-dot rounded-full bg-accent-primary" style={{ animationDelay: "0s" }} />
+              <span className="h-2 w-2 animate-pulse-dot rounded-full bg-accent-primary" style={{ animationDelay: "0.2s" }} />
+              <span className="h-2 w-2 animate-pulse-dot rounded-full bg-accent-primary" style={{ animationDelay: "0.4s" }} />
             </div>
           ) : (
             <div>
@@ -126,7 +125,7 @@ export default memo(function ChatMessage({ message, onRetry }: ChatMessageProps)
                   {files.map((f, i) => (
                     <div
                       key={i}
-                      className="flex items-center gap-1.5 rounded-lg bg-white/5 px-2.5 py-1.5 text-xs text-gray-400"
+                      className="flex items-center gap-1.5 rounded-lg bg-white/5 px-2.5 py-1.5 text-xs text-text-secondary"
                     >
                       {f.type === "image" ? <ImageIcon size={12} /> : <FileText size={12} />}
                       <span className="max-w-[160px] truncate">{f.filename}</span>
@@ -134,14 +133,14 @@ export default memo(function ChatMessage({ message, onRetry }: ChatMessageProps)
                   ))}
                 </div>
               )}
-              <div className="prose prose-invert prose-sm max-w-none text-gray-200">
+              <div className="prose prose-invert prose-sm max-w-none text-text-primary">
                 {isStreaming ? (
                   <span className="whitespace-pre-wrap">{text || content}</span>
                 ) : (
                   <ReactMarkdown>{text || content}</ReactMarkdown>
                 )}
                 {isStreaming && content && (
-                  <span className="inline-block h-4 w-1.5 animate-pulse bg-accent-cyan ml-0.5 align-text-bottom" />
+                  <span className="inline-block h-4 w-0.5 animate-pulse bg-accent-primary ml-0.5 align-text-bottom" />
                 )}
               </div>
             </div>
@@ -153,8 +152,8 @@ export default memo(function ChatMessage({ message, onRetry }: ChatMessageProps)
             onClick={toggleSpeak}
             className={`flex items-center gap-1.5 rounded-lg px-2.5 py-1 text-xs transition-all ${
               speaking
-                ? "bg-accent-cyan/15 text-accent-cyan shadow-[0_0_8px_rgba(0,229,255,0.15)]"
-                : "text-gray-500 hover:bg-white/5 hover:text-gray-300"
+                ? "bg-accent-primary/10 text-accent-primary"
+                : "text-text-muted hover:bg-white/5 hover:text-text-secondary"
             }`}
           >
             {speaking ? <Volume2 size={13} className="animate-pulse" /> : <VolumeX size={13} />}

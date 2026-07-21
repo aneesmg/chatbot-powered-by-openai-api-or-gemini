@@ -39,7 +39,6 @@ export default function ChatConversationPage({
       await fetch(`/api/conversations?conversationId=${id}`, { method: "DELETE" });
       router.push("/chat");
     } catch {
-      // ignore
     }
     setDeleting(false);
   }
@@ -50,16 +49,16 @@ export default function ChatConversationPage({
 
       <button
         onClick={() => setSidebarOpen(true)}
-        className="fixed left-3 top-20 z-30 rounded-xl glass p-2.5 text-gray-400 hover:text-white md:hidden"
+        className="fixed left-3 top-20 z-30 rounded-xl border border-border bg-surface p-2.5 text-text-muted hover:text-text-primary md:hidden"
       >
         <Menu size={20} />
       </button>
 
       <main className="flex flex-1 flex-col">
-        <div className="flex items-center justify-between border-b border-white/10 px-4 py-2">
+        <div className="flex items-center justify-between border-b border-border px-4 py-2">
           <button
             onClick={() => router.push("/chat")}
-            className="flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-sm text-gray-400 transition-colors hover:bg-white/5 hover:text-white"
+            className="flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-sm text-text-secondary transition-colors hover:bg-white/5 hover:text-text-primary"
           >
             <ArrowLeft size={16} />
             Back
@@ -79,7 +78,7 @@ export default function ChatConversationPage({
             <SkeletonLoader />
           ) : messages.length === 0 ? (
             <div className="flex h-full items-center justify-center">
-              <p className="text-sm text-gray-500">Start a conversation by sending a message below.</p>
+              <p className="text-sm text-text-muted">Start a conversation by sending a message below.</p>
             </div>
           ) : (
             <div className="mx-auto flex max-w-3xl flex-col gap-4">
@@ -91,11 +90,11 @@ export default function ChatConversationPage({
                 />
               ))}
               {isAITyping && !isStreaming && (
-                <div className="flex items-center gap-2 px-1 py-2 text-sm text-gray-500">
+                <div className="flex items-center gap-2 px-1 py-2 text-sm text-text-muted">
                   <span className="flex items-center gap-1">
-                    <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-accent-cyan" style={{ animationDelay: "0ms" }} />
-                    <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-accent-cyan" style={{ animationDelay: "150ms" }} />
-                    <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-accent-cyan" style={{ animationDelay: "300ms" }} />
+                    <span className="h-1.5 w-1.5 animate-pulse-dot rounded-full bg-accent-primary" style={{ animationDelay: "0s" }} />
+                    <span className="h-1.5 w-1.5 animate-pulse-dot rounded-full bg-accent-primary" style={{ animationDelay: "0.2s" }} />
+                    <span className="h-1.5 w-1.5 animate-pulse-dot rounded-full bg-accent-primary" style={{ animationDelay: "0.4s" }} />
                   </span>
                   AI is thinking...
                 </div>
@@ -105,7 +104,7 @@ export default function ChatConversationPage({
           <div ref={bottomRef} />
         </div>
 
-        <div className="border-t border-white/10 px-4 py-3">
+        <div className="border-t border-border px-4 py-3">
           <ChatInput
             onSend={sendMessage}
             onCancel={cancel}

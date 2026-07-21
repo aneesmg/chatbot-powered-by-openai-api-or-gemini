@@ -8,6 +8,8 @@ import type { IConversation } from "@/models/Conversation";
 import { connectToDatabase } from "@/lib/mongodb";
 import { maybeSummarize } from "@/lib/memory/summarize";
 import Message from "@/models/Message";
+import Conversation from "@/models/Conversation";
+import { getIO } from "@/lib/socket-server";
 
 const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
 
@@ -55,7 +57,6 @@ export async function POST(req: NextRequest) {
   try {
     await connectToDatabase();
 
-    // Fetch conversation and build history in parallel
     const [conversation, recentMessages] = await Promise.all([
       getConversationById(conversationId),
       Message.find({ conversationId })
@@ -105,7 +106,19 @@ export async function POST(req: NextRequest) {
       });
     }
 
-    await addMessage(conversationId, "user", userContent);
+    const savedUserMessage = await addMessage(conversationId, "user", userContent);
+
+    Conversation.findById(conversationId).select("title").lean().then((doc) => {
+      if (doc && (doc.title === "New Chat" || !doc.title)) {
+        Conversation.findByIdAndUpdate(conversationId, { title: message.slice(0, 60) }).catch(() => {});
+      }
+    }).catch(() => {});
+
+    const io = getIO();
+    if (io) {
+      io.to(`conversation:${conversationId}`).emit("message:new", savedUserMessage.toObject());
+      io.to(`user:${userId}`).emit("conversation:updated");
+    }
 
     const messagesForGroq = [...history, { role: "user" as const, content: userContent }];
 
@@ -145,9 +158,11 @@ export async function POST(req: NextRequest) {
           controller.close();
 
           try {
-            await addMessage(conversationId, "assistant", fullResponse || "Error: Failed to generate response.");
+            const savedAssistantMessage = await addMessage(conversationId, "assistant", fullResponse || "Error: Failed to generate response.");
+            if (io) {
+              io.to(`conversation:${conversationId}`).emit("message:new", savedAssistantMessage.toObject());
+            }
           } catch {
-            // ignore save error
           }
           return;
         }
@@ -155,7 +170,10 @@ export async function POST(req: NextRequest) {
         controller.close();
 
         try {
-          await addMessage(conversationId, "assistant", fullResponse);
+          const savedAssistantMessage = await addMessage(conversationId, "assistant", fullResponse);
+          if (io) {
+            io.to(`conversation:${conversationId}`).emit("message:new", savedAssistantMessage.toObject());
+          }
 
           maybeSummarize(conversationId).catch((err) =>
             console.error("Summarization trigger failed:", err)
