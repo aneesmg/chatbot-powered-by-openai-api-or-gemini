@@ -108,7 +108,6 @@ export function useVoiceInput(): UseVoiceInputReturn {
           const text = await transcribeAudio(blob);
           setTranscript(text);
         } catch {
-          // whisper unavailable silently
         }
         recorderRef.current?.stream.getTracks().forEach((t) => t.stop());
         recorderRef.current = null;

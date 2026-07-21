@@ -36,7 +36,6 @@ export async function POST(req: NextRequest) {
     const ext = "." + file.name.split(".").pop()?.toLowerCase();
     const buffer = Buffer.from(await file.arrayBuffer());
 
-    // Text files — read directly
     if (TEXT_EXTENSIONS.has(ext)) {
       const text = buffer.toString("utf-8");
       return Response.json({
@@ -46,7 +45,6 @@ export async function POST(req: NextRequest) {
       } satisfies UploadResult);
     }
 
-    // Images — describe via Groq vision
     if (IMAGE_EXTENSIONS.has(ext)) {
       const base64 = buffer.toString("base64");
       const mime = file.type || "image/jpeg";
@@ -75,7 +73,6 @@ export async function POST(req: NextRequest) {
       } satisfies UploadResult);
     }
 
-    // Other file types — note the filename only
     return Response.json({
       filename: file.name,
       type: "other",

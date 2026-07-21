@@ -56,7 +56,6 @@ export async function DELETE(req: NextRequest) {
   try {
     await connectToDatabase();
 
-    // Delete a single conversation
     if (conversationId) {
       const conversation = await getConversationById(conversationId);
       if (!conversation) {
@@ -70,7 +69,6 @@ export async function DELETE(req: NextRequest) {
       return Response.json({ success: true });
     }
 
-    // Delete all user conversations
     const userConvs = await getConversationsByUser(userId);
     const ids = userConvs.map((c) => (c as IConversation)._id);
     if (ids.length > 0) {
