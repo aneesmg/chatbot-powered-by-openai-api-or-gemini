@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, memo, useEffect } from "react";
+import { useState, useCallback, memo, useEffect, useRef } from "react";
 import { Bot, User, RefreshCw, Volume2, VolumeX, FileText, Image as ImageIcon } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import type { Message } from "@/hooks/useChat";
@@ -72,65 +72,57 @@ export default memo(function ChatMessage({ message, onRetry }: ChatMessageProps)
       || null;
   }, []);
 
-  const speakText = useCallback((text: string, voice: SpeechSynthesisVoice | null) => {
-    const plain = text
-      .replace(/\*\*(.+?)\*\*/g, "$1")
-      .replace(/`([^`]+)`/g, "$1")
-      .replace(/\[([^\]]+)\]\([^)]+\)/g, "$1")
-      .replace(/[*_~#>`\-]/g, "")
-      .replace(/\n{2,}/g, ". ")
-      .replace(/\n/g, ". ")
-      .replace(/\.{2,}/g, ".")
-      .trim();
+  const speakRef = useRef<SpeechSynthesisVoice | null>(null);
+  speakRef.current = getVoice();
 
-    const sentences = plain.match(/[^.!?]+[.!?]+/g);
-    if (!sentences) {
-      speechSynthesis.speak(utterance(plain, voice, () => setSpeaking(false)));
-      return;
-    }
-
-    const chunks: string[] = [];
-    let buf = "";
-    for (const s of sentences) {
-      if ((buf + s).length > 200 && buf) { chunks.push(buf.trim()); buf = s; }
-      else { buf += s; }
-    }
-    if (buf.trim()) chunks.push(buf.trim());
-
-    if (chunks.length === 0) return;
-
-    let index = 0;
-    function next() {
-      if (index >= chunks.length) { setSpeaking(false); return; }
-      const u = utterance(chunks[index++], voice, next);
-      speechSynthesis.speak(u);
-    }
-    next();
-  }, []);
-
-  function utterance(text: string, voice: SpeechSynthesisVoice | null, onDone: () => void) {
-    const u = new SpeechSynthesisUtterance(text);
-    u.rate = 1.0;
-    u.pitch = 1.0;
-    u.volume = 1;
-    if (voice) u.voice = voice;
-    u.onend = onDone;
-    u.onerror = () => setSpeaking(false);
-    return u;
-  }
+  const utteranceRef = useRef<SpeechSynthesisUtterance[]>([]);
 
   const toggleSpeak = useCallback(() => {
     if (speaking) {
       speechSynthesis.cancel();
+      utteranceRef.current = [];
       setSpeaking(false);
       return;
     }
+
     speechSynthesis.cancel();
-    const voice = getVoice();
-    const source = (!isUser && !isError ? text : content) || content;
-    speakText(source, voice);
+    utteranceRef.current = [];
+
+    const raw = (!isUser && !isError ? text : content) || content;
+    const plain = raw
+      .replace(/\*\*(.+?)\*\*/g, "$1")
+      .replace(/###?\s*/g, "")
+      .replace(/`([^`]+)`/g, "$1")
+      .replace(/\[([^\]]+)\]\([^)]+\)/g, "$1")
+      .replace(/[*_~#>|\\\-]/g, "")
+      .replace(/\n{2,}/g, ". ")
+      .replace(/\n/g, " ")
+      .replace(/\.{3,}/g, ".")
+      .replace(/\s{2,}/g, " ")
+      .trim();
+
+    if (!plain) return;
+
+    const parts = plain.match(/.{1,200}(?:\.|!|\?|$)|.{1,200}(?:\s|$)/g) || [plain];
+    const voice = speakRef.current;
+
+    let index = 0;
+    function speakChunk() {
+      if (index >= parts.length) { setSpeaking(false); return; }
+      const u = new SpeechSynthesisUtterance(parts[index++].trim());
+      u.rate = 1.0;
+      u.pitch = 1.0;
+      u.volume = 1;
+      if (voice) u.voice = voice;
+      u.onend = speakChunk;
+      u.onerror = speakChunk;
+      utteranceRef.current.push(u);
+      speechSynthesis.speak(u);
+    }
+
     setSpeaking(true);
-  }, [speaking, content, text, isUser, isError, getVoice, speakText]);
+    setTimeout(() => speakChunk(), 50);
+  }, [speaking, content, text, isUser, isError, getVoice]);
 
   return (
     <div
