@@ -73,38 +73,51 @@ export default memo(function ChatMessage({ message, onRetry }: ChatMessageProps)
   }, []);
 
   const speakText = useCallback((text: string, voice: SpeechSynthesisVoice | null) => {
-    const maxLength = 200;
-    const sentences = text.match(/[^.!?]+[.!?]+/g) || [text];
-    const chunks: string[] = [];
-    let current = "";
+    const plain = text
+      .replace(/\*\*(.+?)\*\*/g, "$1")
+      .replace(/`([^`]+)`/g, "$1")
+      .replace(/\[([^\]]+)\]\([^)]+\)/g, "$1")
+      .replace(/[*_~#>`\-]/g, "")
+      .replace(/\n{2,}/g, ". ")
+      .replace(/\n/g, ". ")
+      .replace(/\.{2,}/g, ".")
+      .trim();
 
-    for (const s of sentences) {
-      if ((current + s).length > maxLength && current) {
-        chunks.push(current.trim());
-        current = s;
-      } else {
-        current += s;
-      }
+    const sentences = plain.match(/[^.!?]+[.!?]+/g);
+    if (!sentences) {
+      speechSynthesis.speak(utterance(plain, voice, () => setSpeaking(false)));
+      return;
     }
-    if (current.trim()) chunks.push(current.trim());
+
+    const chunks: string[] = [];
+    let buf = "";
+    for (const s of sentences) {
+      if ((buf + s).length > 200 && buf) { chunks.push(buf.trim()); buf = s; }
+      else { buf += s; }
+    }
+    if (buf.trim()) chunks.push(buf.trim());
 
     if (chunks.length === 0) return;
 
     let index = 0;
-    function speakNext() {
+    function next() {
       if (index >= chunks.length) { setSpeaking(false); return; }
-      const u = new SpeechSynthesisUtterance(chunks[index++]);
-      u.rate = 1.0;
-      u.pitch = 1.0;
-      u.volume = 1;
-      if (voice) u.voice = voice;
-      u.onend = speakNext;
-      u.onerror = () => setSpeaking(false);
+      const u = utterance(chunks[index++], voice, next);
       speechSynthesis.speak(u);
     }
-
-    speakNext();
+    next();
   }, []);
+
+  function utterance(text: string, voice: SpeechSynthesisVoice | null, onDone: () => void) {
+    const u = new SpeechSynthesisUtterance(text);
+    u.rate = 1.0;
+    u.pitch = 1.0;
+    u.volume = 1;
+    if (voice) u.voice = voice;
+    u.onend = onDone;
+    u.onerror = () => setSpeaking(false);
+    return u;
+  }
 
   const toggleSpeak = useCallback(() => {
     if (speaking) {
@@ -114,8 +127,8 @@ export default memo(function ChatMessage({ message, onRetry }: ChatMessageProps)
     }
     speechSynthesis.cancel();
     const voice = getVoice();
-    const raw = (!isUser && !isError ? text : content) || content;
-    speakText(raw, voice);
+    const source = (!isUser && !isError ? text : content) || content;
+    speakText(source, voice);
     setSpeaking(true);
   }, [speaking, content, text, isUser, isError, getVoice, speakText]);
 
