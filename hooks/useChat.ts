@@ -75,8 +75,7 @@ export function useChat(conversationId: string): UseChatReturn {
     async function initSocket() {
       try {
         const socket = await connectSocket(getToken);
-
-        if (cancelled) return;
+        if (!socket || cancelled) return;
 
         joinConversation(conversationId);
 

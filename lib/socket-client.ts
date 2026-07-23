@@ -7,9 +7,9 @@ export function getSocket(): Socket | null {
   return socket;
 }
 
-export async function connectSocket(getToken: () => Promise<string | null>): Promise<Socket> {
+export async function connectSocket(getToken: () => Promise<string | null>): Promise<Socket | null> {
   const token = await getToken();
-  if (!token) throw new Error("No auth token");
+  if (!token) return null;
 
   if (socket?.connected && token === currentToken) return socket;
 
@@ -19,12 +19,34 @@ export async function connectSocket(getToken: () => Promise<string | null>): Pro
 
   currentToken = token;
 
-  socket = io({
-    auth: { token },
-    transports: ["websocket", "polling"],
-  });
+  try {
+    socket = io({
+      auth: { token },
+      transports: ["websocket", "polling"],
+      reconnectionAttempts: 2,
+      timeout: 5000,
+    });
 
-  return socket;
+    await new Promise<void>((resolve, reject) => {
+      const timeout = setTimeout(() => {
+        reject(new Error("Socket connection timeout"));
+      }, 5000);
+      socket!.on("connect", () => {
+        clearTimeout(timeout);
+        resolve();
+      });
+      socket!.on("connect_error", (err) => {
+        clearTimeout(timeout);
+        reject(err);
+      });
+    });
+
+    return socket;
+  } catch {
+    socket = null;
+    currentToken = null;
+    return null;
+  }
 }
 
 export function disconnectSocket(): void {
@@ -36,9 +58,13 @@ export function disconnectSocket(): void {
 }
 
 export function joinConversation(conversationId: string): void {
-  socket?.emit("join:conversation", conversationId);
+  if (socket?.connected) {
+    socket.emit("join:conversation", conversationId);
+  }
 }
 
 export function leaveConversation(conversationId: string): void {
-  socket?.emit("leave:conversation", conversationId);
+  if (socket?.connected) {
+    socket.emit("leave:conversation", conversationId);
+  }
 }
