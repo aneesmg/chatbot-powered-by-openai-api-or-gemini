@@ -72,26 +72,24 @@ export default memo(function ChatMessage({ message, onRetry }: ChatMessageProps)
       || null;
   }, []);
 
-  const speakRef = useRef<SpeechSynthesisVoice | null>(null);
-  speakRef.current = getVoice();
-
-  const utteranceRef = useRef<SpeechSynthesisUtterance[]>([]);
+  const cancelledRef = useRef(false);
 
   const toggleSpeak = useCallback(() => {
     if (speaking) {
+      cancelledRef.current = true;
       speechSynthesis.cancel();
-      utteranceRef.current = [];
       setSpeaking(false);
       return;
     }
 
+    cancelledRef.current = false;
     speechSynthesis.cancel();
-    utteranceRef.current = [];
 
     const raw = (!isUser && !isError ? text : content) || content;
     const plain = raw
       .replace(/\*\*(.+?)\*\*/g, "$1")
       .replace(/###?\s*/g, "")
+      .replace(/```[\s\S]*?```/g, "")
       .replace(/`([^`]+)`/g, "$1")
       .replace(/\[([^\]]+)\]\([^)]+\)/g, "$1")
       .replace(/[*_~#>|\\\-]/g, "")
@@ -103,26 +101,41 @@ export default memo(function ChatMessage({ message, onRetry }: ChatMessageProps)
 
     if (!plain) return;
 
-    const parts = plain.match(/.{1,200}(?:\.|!|\?|$)|.{1,200}(?:\s|$)/g) || [plain];
-    const voice = speakRef.current;
+    const parts: string[] = [];
+    let buf = "";
+    for (const char of plain) {
+      buf += char;
+      if (buf.length >= 200 && /[.!?\n]/.test(char)) {
+        parts.push(buf.trim());
+        buf = "";
+      }
+    }
+    if (buf.trim()) parts.push(buf.trim());
+    if (parts.length === 0) parts.push(plain);
+
+    const voice = getVoice();
 
     let index = 0;
-    function speakChunk() {
-      if (index >= parts.length) { setSpeaking(false); return; }
-      const u = new SpeechSynthesisUtterance(parts[index++].trim());
-      u.rate = 1.0;
+    function speakNext() {
+      if (cancelledRef.current || index >= parts.length) {
+        setSpeaking(false);
+        return;
+      }
+      const u = new SpeechSynthesisUtterance(parts[index++]);
+      u.rate = 0.95;
       u.pitch = 1.0;
       u.volume = 1;
       if (voice) u.voice = voice;
-      u.onend = speakChunk;
-      u.onerror = speakChunk;
-      utteranceRef.current.push(u);
+      u.onend = speakNext;
+      u.onerror = () => {
+        if (!cancelledRef.current) speakNext();
+      };
       speechSynthesis.speak(u);
     }
 
     setSpeaking(true);
-    setTimeout(() => speakChunk(), 50);
-  }, [speaking, content, text, isUser, isError, getVoice]);
+    speakNext();
+  }, [content, text, isUser, isError, getVoice]);
 
   return (
     <div
