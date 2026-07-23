@@ -108,11 +108,12 @@ export async function POST(req: NextRequest) {
 
     const savedUserMessage = await addMessage(conversationId, "user", userContent);
 
-    Conversation.findById(conversationId).select("title").lean().then((doc) => {
-      if (doc && (doc.title === "New Chat" || !doc.title)) {
-        Conversation.findByIdAndUpdate(conversationId, { title: message.slice(0, 60) }).catch(() => {});
+    try {
+      const conv = await Conversation.findById(conversationId).select("title").lean();
+      if (conv && (conv.title === "New Chat" || !conv.title)) {
+        await Conversation.findByIdAndUpdate(conversationId, { title: message.slice(0, 60) });
       }
-    }).catch(() => {});
+    } catch {}
 
     const io = getIO();
     if (io) {

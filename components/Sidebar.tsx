@@ -63,7 +63,10 @@ export default function Sidebar({
     return () => { cancelled = true; };
   }, [getToken]);
 
-
+  useEffect(() => {
+    const interval = setInterval(() => loadConversations(true), 5000);
+    return () => clearInterval(interval);
+  }, []);
 
   async function handleNewChat() {
     try {
