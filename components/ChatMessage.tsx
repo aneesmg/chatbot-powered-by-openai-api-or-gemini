@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, memo } from "react";
+import { useState, useCallback, memo, useEffect } from "react";
 import { Bot, User, RefreshCw, Volume2, VolumeX, FileText, Image as ImageIcon } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import type { Message } from "@/hooks/useChat";
@@ -57,6 +57,21 @@ export default memo(function ChatMessage({ message, onRetry }: ChatMessageProps)
 
   const { text, files } = !isUser && !isError ? parseContent(content) : { text: content, files: [] };
 
+  useEffect(() => {
+    if (typeof window !== "undefined" && speechSynthesis.getVoices().length === 0) {
+      speechSynthesis.getVoices();
+    }
+  }, []);
+
+  const getVoice = useCallback(() => {
+    const voices = speechSynthesis.getVoices();
+    return voices.find((v) => v.lang.startsWith("en") && v.name.includes("Google"))
+      || voices.find((v) => v.lang.startsWith("en") && v.name.includes("Microsoft"))
+      || voices.find((v) => v.lang.startsWith("en-US"))
+      || voices.find((v) => v.lang.startsWith("en"))
+      || null;
+  }, []);
+
   const toggleSpeak = useCallback(() => {
     if (speaking) {
       speechSynthesis.cancel();
@@ -65,11 +80,16 @@ export default memo(function ChatMessage({ message, onRetry }: ChatMessageProps)
     }
     speechSynthesis.cancel();
     const utterance = new SpeechSynthesisUtterance(content);
+    utterance.rate = 1.0;
+    utterance.pitch = 1.0;
+    utterance.volume = 1;
+    const voice = getVoice();
+    if (voice) utterance.voice = voice;
     utterance.onend = () => setSpeaking(false);
     utterance.onerror = () => setSpeaking(false);
     setSpeaking(true);
     speechSynthesis.speak(utterance);
-  }, [speaking, content]);
+  }, [speaking, content, getVoice]);
 
   return (
     <div
