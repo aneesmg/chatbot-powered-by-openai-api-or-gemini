@@ -72,12 +72,14 @@ export default memo(function ChatMessage({ message, onRetry }: ChatMessageProps)
       || null;
   }, []);
 
+  const speakingRef = useRef(false);
   const cancelledRef = useRef(false);
 
   const toggleSpeak = useCallback(() => {
-    if (speaking) {
+    if (speakingRef.current) {
       cancelledRef.current = true;
       speechSynthesis.cancel();
+      speakingRef.current = false;
       setSpeaking(false);
       return;
     }
@@ -118,6 +120,7 @@ export default memo(function ChatMessage({ message, onRetry }: ChatMessageProps)
     let index = 0;
     function speakNext() {
       if (cancelledRef.current || index >= parts.length) {
+        speakingRef.current = false;
         setSpeaking(false);
         return;
       }
@@ -133,6 +136,7 @@ export default memo(function ChatMessage({ message, onRetry }: ChatMessageProps)
       speechSynthesis.speak(u);
     }
 
+    speakingRef.current = true;
     setSpeaking(true);
     speakNext();
   }, [content, text, isUser, isError, getVoice]);
