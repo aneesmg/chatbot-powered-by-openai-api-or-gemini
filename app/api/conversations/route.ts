@@ -22,8 +22,10 @@ export async function GET() {
     await connectToDatabase();
     const conversations = await getConversationsByUser(userId);
     return Response.json(conversations);
-  } catch {
-    return Response.json({ error: "Internal server error" }, { status: 500 });
+  } catch (err) {
+    console.error("GET /api/conversations error:", err);
+    const msg = err instanceof Error ? err.message : "Internal server error";
+    return Response.json({ error: msg }, { status: 500 });
   }
 }
 
@@ -39,8 +41,10 @@ export async function POST(req: NextRequest) {
     await connectToDatabase();
     const conversation = await createConversation(userId, title || "New Chat");
     return Response.json(conversation, { status: 201 });
-  } catch {
-    return Response.json({ error: "Internal server error" }, { status: 500 });
+  } catch (err) {
+    console.error("POST /api/conversations error:", err);
+    const msg = err instanceof Error ? err.message : "Internal server error";
+    return Response.json({ error: msg }, { status: 500 });
   }
 }
 
@@ -76,7 +80,9 @@ export async function DELETE(req: NextRequest) {
     }
     await deleteAllUserConversations(userId);
     return Response.json({ success: true });
-  } catch {
-    return Response.json({ error: "Internal server error" }, { status: 500 });
+  } catch (err) {
+    console.error("DELETE /api/conversations error:", err);
+    const msg = err instanceof Error ? err.message : "Internal server error";
+    return Response.json({ error: msg }, { status: 500 });
   }
 }
